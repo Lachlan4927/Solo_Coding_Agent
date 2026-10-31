@@ -21,6 +21,8 @@ from agents.agent_prompts import (
     CODER, TESTER, ORCHESTRATOR, COMPACT_MANAGED_TASK
 )
 
+from agents.coordinator import Coordinator
+
 def build_single_agent():
 
     # one model is enough for this basic version
@@ -89,24 +91,27 @@ def build_multi_agent_system():
     )
 
 
+    return Coordinator(coder, tester)
 
-    for worker in (coder, tester):
-        worker.prompt_templates["managed_agent"]["task"] = COMPACT_MANAGED_TASK
 
-        
-    # orchestrator just sends work between the other two
-    orchestrator = ToolCallingAgent(
-        tools=[],
-        model=llm,
-        managed_agents=[
-            coder,
-            tester
-        ],
-        instructions=ORCHESTRATOR,
-        max_steps=7,
-    )
 
-    for agent in orchestrator.managed_agents.values():
-        agent.inputs.pop("additional_args", None)
+    # for worker in (coder, tester):
+    #     worker.prompt_templates["managed_agent"]["task"] = COMPACT_MANAGED_TASK
 
-    return orchestrator
+
+    # # orchestrator just sends work between the other two
+    # orchestrator = ToolCallingAgent(
+    #     tools=[],
+    #     model=llm,
+    #     managed_agents=[
+    #         coder,
+    #         tester
+    #     ],
+    #     instructions=ORCHESTRATOR,
+    #     max_steps=7,
+    # )
+
+    # for agent in orchestrator.managed_agents.values():
+    #     agent.inputs.pop("additional_args", None)
+
+    # return orchestrator
