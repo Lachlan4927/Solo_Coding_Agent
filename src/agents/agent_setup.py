@@ -8,57 +8,17 @@ multi agent:
 user -> orchestrator -> coder <-> tester
 """
 
-from smolagents import ToolCallingAgent
-from smolagents import LiteLLMModel # 1.5 ok for 1 tool call, calculator ok for 7B modal? multi tool call, very slow on computer.
+import os
 
-from smolagents import OpenAIModel # grok api call
-import os #remove this line before submission, DEMO PURPOSES ONLY, WONT WORK WITH UI
-
-from tools.agent_toolsets import CODER_TOOLS
-
-from tools.agent_toolsets import TESTER_TOOLS
-from agents.agent_prompts import (
-    CODER, TESTER, ORCHESTRATOR, COMPACT_MANAGED_TASK
-)
+from smolagents import ToolCallingAgent, OpenAIModel
 
 from agents.coordinator import Coordinator
-
-def build_single_agent():
-
-    # one model is enough for this basic version
-    llm = LiteLLMModel(
-        model_id="ollama_chat/qwen2.5-coder:1.5b",
-        api_base="http://localhost:11434",
-        api_key="anything",
-        num_ctx=8192
-    )
-
-    agent = ToolCallingAgent(
-        tools=CODER_TOOLS,
-        model=llm,
-        instructions=(
-            "You are a simple coding agent. "
-            "Use the file tools to make the code. "
-            "Run the code with execute_file. "
-            "If it fails, look at the error, fix it, and try again. "
-            "Stop when it works or you cant keep going."
-        )
-    )
-
-    return agent
+from agents.agent_prompts import CODER, TESTER, SINGLE
+from tools.agent_toolsets import CODER_TOOLS, TESTER_TOOLS
 
 
-def build_multi_agent_system():
-
-    # llm = LiteLLMModel(
-    #     model_id="ollama_chat/qwen2.5-coder:7b",
-    #     api_base="http://localhost:11434",
-    #     api_key="anything",
-    #     num_ctx=8192
-    # )
-
-
-    llm = OpenAIModel(
+def build_model():
+    return OpenAIModel(
         model_id="openai/gpt-oss-120b",
         api_base="https://api.groq.com/openai/v1",
         api_key=os.environ["GROQ_API_KEY"],
@@ -67,6 +27,53 @@ def build_multi_agent_system():
         temperature=0.1,
     )
 
+
+
+    # one model is enough for this basic version
+    # llm = LiteLLMModel(
+    #     model_id="ollama_chat/qwen2.5-coder:1.5b",
+    #     api_base="http://localhost:11434",
+    #     api_key="anything",
+    #     num_ctx=8192
+    # )
+
+
+def build_single_agent():
+    
+    # Combine existing tools without duplicate tool names.
+    tools = {
+        tool.name: tool
+        for tool in CODER_TOOLS + TESTER_TOOLS
+    }
+
+    return ToolCallingAgent(
+        tools=list(tools.values()),
+        model=build_model(),
+        name="single_agent",
+        max_steps=16,
+        instructions=SINGLE,
+    )    
+
+
+    # agent = ToolCallingAgent(
+    #     tools=CODER_TOOLS,
+    #     model=llm,
+    #     instructions=(
+    #         "You are a simple coding agent. "
+    #         "Use the file tools to make the code. "
+    #         "Run the code with execute_file. "
+    #         "If it fails, look at the error, fix it, and try again. "
+    #         "Stop when it works or you cant keep going."
+    #     )
+    # )
+
+    # return agent
+
+
+def build_multi_agent_system():
+
+  
+    llm = build_model()
 
 
 

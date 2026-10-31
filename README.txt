@@ -7,3 +7,6 @@ Tests:
 Create calculator.py with an add(a, b) function. Run it once. Then test that add(2, 3) returns 5.
 
 Create hello.py that prints Hello World
+
+Create subtraction.py with subtract(a, b) returning a - b. Test positive, negative and equal inputs.
+
