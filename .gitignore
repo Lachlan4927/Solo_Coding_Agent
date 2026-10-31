@@ -53,3 +53,12 @@ dist/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+
+
+.venv/
+venv/
+.env
+**/__pycache__/
+*.py[cod]
+runtime/workspace/*
