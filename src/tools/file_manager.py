@@ -24,15 +24,36 @@ os.makedirs(workspace_folder, exist_ok=True)
 def get_safe_path(path):
     """gets the proper path but makes sure it stays in the workspace"""
 
-    full_safe_path = os.path.abspath(os.path.join(workspace_folder, path))
-    shared_folder = os.path.commonpath([workspace_folder, full_safe_path])
+    # file tools expect paths relative to runtime/workspace
+    simple_path = os.path.normpath(path).replace("\\", "/")
 
-    # basically stops ../ stuff from escaping the workspace
+    # stops agents from adding the workspace folder a second time
+    first_folder = simple_path.split("/")[0].lower()
+
+    if first_folder == "workspace" or first_folder == "runtime":
+        raise ValueError(
+            "path must be relative to the workspace root; "
+            "use calculator.py instead of workspace/calculator.py"
+        )
+
+    # stops absolute paths such as C:/Users/example
+    if os.path.isabs(path):
+        raise ValueError("absolute paths are not allowed")
+
+    full_safe_path = os.path.abspath(
+        os.path.join(workspace_folder, simple_path)
+    )
+
+    shared_folder = os.path.commonpath([
+        workspace_folder,
+        full_safe_path
+    ])
+
+    # stops paths such as ../../outside.py
     if shared_folder != workspace_folder:
         raise ValueError("path is outside the workspace")
 
     return full_safe_path
-
 
 @tool
 def read_file(path: str) -> str:

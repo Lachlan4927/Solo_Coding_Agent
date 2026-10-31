@@ -89,9 +89,11 @@ def build_multi_agent_system():
     )
 
 
+
     for worker in (coder, tester):
         worker.prompt_templates["managed_agent"]["task"] = COMPACT_MANAGED_TASK
 
+        
     # orchestrator just sends work between the other two
     orchestrator = ToolCallingAgent(
         tools=[],
@@ -103,5 +105,8 @@ def build_multi_agent_system():
         instructions=ORCHESTRATOR,
         max_steps=7,
     )
+
+    for agent in orchestrator.managed_agents.values():
+        agent.inputs.pop("additional_args", None)
 
     return orchestrator

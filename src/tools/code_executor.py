@@ -78,6 +78,10 @@ def execute_file(path: str) -> str:
         path: python file inside the workspace
     """
     result = run_file(path)
-    if result["success"]:
-        return "execution worked\noutput:\n" + result["stdout"]
-    return "execution failed\nerrors:\n" + result["stderr"]
+
+    return (
+        ("execution worked" if result["success"] else "execution failed")
+        + "\nexit code: " + str(result["exit_code"])
+        + "\nstdout:\n" + result["stdout"]
+        + "\nstderr:\n" + result["stderr"]
+    )
