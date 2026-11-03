@@ -10,3 +10,10 @@ Create hello.py that prints Hello World
 
 Create subtraction.py with subtract(a, b) returning a - b. Test positive, negative and equal inputs.
 
+Create Chess Game (human opponent)
+
+Create a php / SQL database CRUD application
+
+Generate SQL database code
+
+Create multiple file website (HTML, CSS, JavaScript)

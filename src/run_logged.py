@@ -53,6 +53,6 @@ folder = project / "runtime" / "logs"
 folder.mkdir(parents=True, exist_ok=True)
 
 with open(folder / "runs.jsonl", "a", encoding="utf-8") as file:
-    file.write(json.dumps(record) + "\n")
+    file.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 print("Saved to runtime/logs/runs.jsonl")

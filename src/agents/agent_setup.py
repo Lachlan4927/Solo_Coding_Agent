@@ -27,7 +27,22 @@ def build_model():
         temperature=0.1,
     )
 
-
+# def build_model():
+#     return OpenAIModel(
+#         model_id="llama-3.3-70b-versatile",
+#         api_base="https://api.groq.com/openai/v1",
+#         api_key=os.environ["GROQ_API_KEY"], 
+#         max_tokens=2048,
+#         temperature=0.1,
+#     ) 
+# def build_model():
+#     return OpenAIModel(
+#         model_id="qwen/qwen3.8-27b",
+#         api_base="https://api.groq.com/openai/v1",
+#         api_key=os.environ["GROQ_API_KEY"],
+#         max_tokens=2048,
+#         temperature=0.1,
+#     )
 
     # one model is enough for this basic version
     # llm = LiteLLMModel(

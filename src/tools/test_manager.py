@@ -8,10 +8,10 @@ from .file_manager import workspace_folder
 @tool
 def write_test_file(path: str, content: str) -> str:
     """
-    Write a Python test under the workspace's tests folder.
+    Write a Python test inside the workspace's tests folder.
 
     Args:
-        path: Relative filename inside tests, such as test_solution.py.
+        path: Workspace-relative path, such as tests/test_solution.py.
         content: Complete Python test code.
     """
     try:
@@ -20,15 +20,15 @@ def write_test_file(path: str, content: str) -> str:
         requested = Path(path)
 
         if requested.is_absolute() or requested.suffix != ".py":
-            return "error: provide a relative Python test filename"
+            return "error: use tests/test_solution.py"
 
-        target = (tests_folder / requested).resolve()
+        target = (workspace / requested).resolve()
 
         if not tests_folder.is_relative_to(workspace):
             return "error: tests folder is outside the workspace"
 
         if not target.is_relative_to(tests_folder):
-            return "error: test path is outside the tests folder"
+            return "error: save tests inside tests/, e.g. tests/test_solution.py"
 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")

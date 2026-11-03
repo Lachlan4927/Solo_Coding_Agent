@@ -18,6 +18,18 @@ def run_file(path: str) -> dict:
     try:
         full_safe_path = get_safe_path(path)
 
+        if os.path.splitext(full_safe_path)[1].lower() != ".py":
+            return {
+                "success": False,
+                "stdout": "",
+                "stderr": (
+                    "Execution supports Python .py files only. "
+                    "Other files can be created, viewed and downloaded, "
+                    "but cannot be executed or verified here."
+                ),
+                "exit_code": None,
+            }
+
         if os.path.isfile(full_safe_path) == False:
             return {"success": False, "stdout": "", "stderr": "python file doesnt exist", "exit_code": None}
 
