@@ -53,6 +53,7 @@ def run_file(path: str) -> dict:
             "--read-only",
             "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
             "-e", "PYTHONDONTWRITEBYTECODE=1",
+            "-e", "PYTHONPATH=/workspace",
             "-v", workspace_folder + ":/workspace:ro",
             "python:3.12-slim",
             "python",

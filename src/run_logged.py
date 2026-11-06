@@ -5,7 +5,6 @@ import sys
 import time
 from pathlib import Path
 
-
 project = Path(__file__).resolve().parent.parent
 
 mode = input("single or multi: ").strip()
@@ -17,36 +16,43 @@ if mode == "single":
 elif mode == "multi":
     script = "run_multi_agent.py"
 else:
-    print("Choose single or multi.")
-    sys.exit()
+    sys.exit("Choose single or multi.")
 
-os.environ["CODING_TASK"] = task
-os.environ["PYTHONIOENCODING"] = "utf-8"
+os.environ["PYTHONIOENCODING"] = "utf-8" 
 
 started = time.time()
-print("Running... output will appear when finished.")
+output = ""
 
-result = subprocess.run(
+print("Running...", flush=True)
+
+process = subprocess.Popen(
     [sys.executable, "-u", "-B", str(project / "src" / script)],
-    input=task + "\n",
-    capture_output=True,
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
     text=True,
     encoding="utf-8",
     errors="replace",
     cwd=project,
 )
 
-print(result.stdout)
-print(result.stderr)
+process.stdin.write(task + "\n")
+process.stdin.close()
+
+for line in process.stdout:
+    print(line, end="", flush=True)
+    output += line
+
+process.wait()
 
 record = {
     "task_id": task_id,
     "mode": mode,
     "task": task,
     "seconds": round(time.time() - started, 2),
-    "exit_code": result.returncode,
-    "output": result.stdout,
-    "errors": result.stderr,
+    "exit_code": process.returncode,
+    "output": output,
+    "errors": "",
 }
 
 folder = project / "runtime" / "logs"

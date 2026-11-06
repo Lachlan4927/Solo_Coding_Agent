@@ -89,9 +89,29 @@
 
                 const log = await response.json();
                 const text = log.output || "";
-                const result = text.split("final result:").pop().trim().split("\n")[0];
+
+                const reports = [...text.matchAll(
+                    /Coder report:([\s\S]*?)(?=└|╰|━━━━━━━━|$)/g
+                )];
+
+                const coder = reports.length
+                    ? reports[reports.length - 1][1]
+                        .replace(/^[ \t]*│[ \t]?|[ \t]*│[ \t]*$/gm, "")
+                        .trim()
+                    : "No Coder report recorded.";
+
+                const result = text.includes("final result:")
+                    ? text.split("final result:").pop().trim()
+                    : log.errors || "No final result recorded.";
+
                 const counts = [...text.matchAll(/Ran (\d+) tests?/g)];
                 const count = counts.length ? counts[counts.length - 1][1] : "?";
+
+                const files = [...new Set(
+                    [...text.matchAll(/Observations: saved (?:test )?file: ([^\r\n]+)/g)]
+                        .map(match => match[1].trim())
+                )];
+
                 const recovered =
                     text.includes("Coder response failed.") ||
                     text.includes("Recorded unittest executions passed.");
@@ -101,14 +121,17 @@
                     `System: ${log.mode}\n` +
                     `Duration: ${log.seconds} seconds\n` +
                     `Tests: ${count} run\n` +
-                    `Final result: ${text.includes("final result:") ? result : "Unconfirmed"}\n` +
-                    `Recovery: ${recovered ? "Used after malformed model responses" : "Not recorded"}`;
+                    `Recovery: ${recovered ? "Used" : "Not recorded"}\n` +
+                    `Files saved: ${files.join(", ") || "None recorded"}\n\n` +
+                    (log.mode === "single"
+                        ? `Single-agent result:\n${result}`
+                        : `Coder report:\n${coder}\n\n` +
+                        `Final result / recorded test evidence:\n${result}`);
             } catch {
                 document.querySelector("#savedLog").textContent = "Log unavailable.";
             }
-        }
-
-loadLatestLog();
+        } 
+        loadLatestLog();
 
         async function loadFiles() {
             const response = await fetch("/files");
@@ -178,6 +201,7 @@ loadLatestLog();
                 status.textContent = "Error: " + error.message;
             } finally {
                 button.disabled = false;
+                loadLatestLog();
                 loadFiles().catch(console.error);
             }
         });

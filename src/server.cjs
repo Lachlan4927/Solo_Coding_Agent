@@ -17,8 +17,7 @@ app.post("/run", (req, res) => {
     // Only accept browser requests from our local page.
     const origin = req.get("origin");
     if (origin && ![
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
+        "http://localhost:3000"
     ].includes(origin)) {
         return res.status(403).send("Invalid origin.");
     }

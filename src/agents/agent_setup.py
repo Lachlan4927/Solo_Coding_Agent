@@ -25,7 +25,7 @@ def build_model():
         reasoning_effort="low",
         max_tokens=8192,
         temperature=0.1,
-        stop=None,
+        # stop=None,
     )
 
 
@@ -69,9 +69,9 @@ def build_model():
 #         model_id="qwen/qwen3.8-27b",
 #         api_base="https://api.groq.com/openai/v1",
 #         api_key=os.environ["GROQ_API_KEY"],
-#         max_tokens=2048,
-#         temperature=0.1,
-#     )
+#         max_tokens=2048, 
+#         temperature=0.1
+#     ) 
 
     # one model is enough for this basic version
     # llm = LiteLLMModel(
