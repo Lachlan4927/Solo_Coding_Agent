@@ -35,12 +35,10 @@ app.post("/run", (req, res) => {
         return res.status(400).send("Choose a system and enter a task.");
     }
 
-    // if (!process.env.GROQ_API_KEY) {
-    //     return res.status(400).send("Set GROQ_API_KEY before starting Node.");
-    // }
-    if (!process.env.GEMINI_API_KEY) {
-        return res.status(400).send("Set GEMINI_API_KEY before starting Node.");
+    if (!process.env.GROQ_API_KEY || !process.env.GEMINI_API_KEY) {
+        return res.status(400).send("Set API_KEY before starting Node.");
     }
+
 
     running = true;
     res.type("text/plain; charset=utf-8");
