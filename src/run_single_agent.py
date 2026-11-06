@@ -2,6 +2,8 @@
 
 from smolagents.utils import AgentGenerationError
 from agents.agent_setup import build_single_agent
+import re
+from tools.code_executor import run_file
 
 
 def main():

@@ -8,11 +8,14 @@ from .file_manager import workspace_folder
 @tool
 def write_test_file(path: str, content: str) -> str:
     """
-    Write a Python test inside the workspace's tests folder.
+    Create or replace a Python test file.
+    Paths are relative to the workspace root and must include tests/.
+    Missing parent directories are created automatically.
+    This tool saves the file; use execute_file to run it.
 
     Args:
-        path: Workspace-relative path, such as tests/test_solution.py.
-        content: Complete Python test code.
+        path: Relative test path including tests/, such as tests/test_solution.py. Do not supply a bare filename, an absolute path, or a runtime/ or workspace/ prefix.
+        content: Complete Python unittest source code, including imports, test methods and an if __name__ == "__main__": unittest.main() entry point.
     """
     try:
         workspace = Path(workspace_folder).resolve()

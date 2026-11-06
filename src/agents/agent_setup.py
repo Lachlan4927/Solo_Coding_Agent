@@ -10,22 +10,51 @@ user -> orchestrator -> coder <-> tester
 
 import os
 
-from smolagents import ToolCallingAgent, OpenAIModel
+from smolagents import ToolCallingAgent, OpenAIModel, LiteLLMModel
 
 from agents.coordinator import Coordinator
 from agents.agent_prompts import CODER, TESTER, SINGLE
-from tools.agent_toolsets import CODER_TOOLS, TESTER_TOOLS
+from tools.agent_toolsets import CODER_TOOLS, TESTER_TOOLS, SINGLE_TOOLS
 
-
+# good recent build here------------------------
 def build_model():
     return OpenAIModel(
         model_id="openai/gpt-oss-120b",
         api_base="https://api.groq.com/openai/v1",
         api_key=os.environ["GROQ_API_KEY"],
         reasoning_effort="low",
-        max_tokens=2048,
+        max_tokens=8192,
         temperature=0.1,
+        stop=None,
     )
+
+
+
+# def build_model():
+#     return OpenAIModel(
+#         model_id="gemini-3.5-flash-lite",
+#         api_base=(
+#             "https://generativelanguage.googleapis.com/"
+#             "v1beta/openai/"
+#         ),
+#         api_key=os.environ["GEMINI_API_KEY"],
+#         max_tokens=2048,
+#         temperature=0.1,
+#     )
+
+
+# too slow
+# def build_model():
+#     return OpenAIModel(
+#         model_id="qwen/qwen3.8-27b",
+#         api_base="https://api.groq.com/openai/v1",
+#         api_key=os.environ["GROQ_API_KEY"],
+#         reasoning_effort="none",
+#         max_tokens=512,
+#         temperature=0.1,
+#         stop=None,
+#     )
+
 
 # def build_model():
 #     return OpenAIModel(
@@ -52,21 +81,27 @@ def build_model():
     #     num_ctx=8192
     # )
 
+# def build_model():
+#     return  LiteLLMModel(
+#         model_id="ollama_chat/qwen2.5-coder:1.5b",
+#         api_base="http://localhost:11434",
+#         api_key="anything",
+#         num_ctx=8192
+#     )
+
 
 def build_single_agent():
     
-    # Combine existing tools without duplicate tool names.
-    tools = {
-        tool.name: tool
-        for tool in CODER_TOOLS + TESTER_TOOLS
-    }
+
 
     return ToolCallingAgent(
-        tools=list(tools.values()),
+        tools=SINGLE_TOOLS,
         model=build_model(),
         name="single_agent",
         max_steps=16,
         instructions=SINGLE,
+        verbosity_level=2,
+     
     )    
 
 

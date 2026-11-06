@@ -31,3 +31,15 @@ TESTER_TOOLS = [
     write_test_file,
     execute_file,
 ]
+
+
+
+SINGLE_TOOLS = [
+    read_file,
+    write_file, # coder ignores prompt to only write code and leave testing to tester, whilst tester is enforced programatically, coder is not, this is a hallucination.
+    list_files,
+    make_directory,
+    delete_file,
+    execute_file,
+    write_test_file
+]
