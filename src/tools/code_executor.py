@@ -18,6 +18,18 @@ def run_file(path: str) -> dict:
     try:
         full_safe_path = get_safe_path(path)
 
+        if os.path.splitext(full_safe_path)[1].lower() != ".py":
+            return {
+                "success": False,
+                "stdout": "",
+                "stderr": (
+                    "Execution supports Python .py files only. "
+                    "Other files can be created, viewed and downloaded, "
+                    "but cannot be executed or verified here."
+                ),
+                "exit_code": None,
+            }
+
         if os.path.isfile(full_safe_path) == False:
             return {"success": False, "stdout": "", "stderr": "python file doesnt exist", "exit_code": None}
 
@@ -78,6 +90,10 @@ def execute_file(path: str) -> str:
         path: python file inside the workspace
     """
     result = run_file(path)
-    if result["success"]:
-        return "execution worked\noutput:\n" + result["stdout"]
-    return "execution failed\nerrors:\n" + result["stderr"]
+
+    return (
+        ("execution worked" if result["success"] else "execution failed")
+        + "\nexit code: " + str(result["exit_code"])
+        + "\nstdout:\n" + result["stdout"]
+        + "\nstderr:\n" + result["stderr"]
+    )

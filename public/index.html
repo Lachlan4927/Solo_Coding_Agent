@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Coding Assistant</title>
+
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 950px;
+            margin: 35px auto;
+            padding: 0 20px;
+            background: #f5f6f8;
+            color: #202530;
+        }
+
+        textarea, input, select, button {
+            box-sizing: border-box;
+            font: inherit;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 130px;
+        }
+
+        button { cursor: pointer; }
+
+        pre {
+            background: #18202c;
+            color: #e6edf5;
+            padding: 18px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            max-height: 500px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+
+        li { margin: 10px 0; }
+
+        .clear { clear: both; }
+
+    </style>
+</head>
+
+<body>
+    <h1>Coding Assistant</h1>
+
+    <form id="taskForm">
+        <label for="mode">System:</label>
+        <select id="mode">
+            <option value="multi">Multi-agent</option>
+            <option value="single">Single agent</option>
+        </select>
+
+        <input type="text" id="taskId" placeholder="Task ID, e.g. T01" >
+
+        <textarea id="task" required placeholder="Describe your coding task"></textarea>
+
+        <button type="submit" id="runButton">Run task</button>
+    </form>
+
+    <pre id="savedLog">No saved run yet.</pre>
+    <div class="clear"></div>
+
+    <p id="status">Ready.</p>
+
+    <h2>Run output</h2>
+    <pre id="output">Output will appear here.</pre>
+
+    <h2>Workspace files</h2>
+    <p>Includes files from previous runs. Click a name to inspect it.</p>
+    <ul id="files"></ul>
+
+    <script>
+        const form = document.querySelector("#taskForm");
+        const button = document.querySelector("#runButton");
+        const output = document.querySelector("#output");
+        const status = document.querySelector("#status");
+
+        async function loadLatestLog() {
+            try {
+                const response = await fetch("/latest-log", { cache: "no-store" });
+                if (!response.ok) return;
+
+                const log = await response.json();
+                const text = log.output || "";
+                const result = text.split("final result:").pop().trim().split("\n")[0];
+                const counts = [...text.matchAll(/Ran (\d+) tests?/g)];
+                const count = counts.length ? counts[counts.length - 1][1] : "?";
+                const recovered =
+                    text.includes("Coder response failed.") ||
+                    text.includes("Recorded unittest executions passed.");
+
+                document.querySelector("#savedLog").textContent =
+                    `Task: ${log.task_id}\n` +
+                    `System: ${log.mode}\n` +
+                    `Duration: ${log.seconds} seconds\n` +
+                    `Tests: ${count} run\n` +
+                    `Final result: ${text.includes("final result:") ? result : "Unconfirmed"}\n` +
+                    `Recovery: ${recovered ? "Used after malformed model responses" : "Not recorded"}`;
+            } catch {
+                document.querySelector("#savedLog").textContent = "Log unavailable.";
+            }
+        }
+
+loadLatestLog();
+
+        async function loadFiles() {
+            const response = await fetch("/files");
+            const files = await response.json();
+            const list = document.querySelector("#files");
+
+            list.replaceChildren();
+
+            for (const name of files) {
+                const item = document.createElement("li");
+
+                const view = document.createElement("a");
+                view.textContent = name;
+                view.href = "/file?name=" + encodeURIComponent(name);
+                view.target = "_blank";
+                view.rel = "noopener";
+
+                const download = document.createElement("a");
+                download.textContent = "Download";
+                download.href = view.href;
+                download.download = name.split("/").pop();
+
+                item.append(view, " — ", download);
+                list.append(item);
+            }
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            button.disabled = true;
+            output.textContent = "";
+            status.textContent =
+                "Running. Detailed output appears when the Python run finishes.";
+
+            try {
+                const response = await fetch("/run", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        mode: document.querySelector("#mode").value,
+                        taskId: document.querySelector("#taskId").value,
+                        task: document.querySelector("#task").value
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    output.textContent += decoder.decode(value, { stream: true });
+                    output.scrollTop = output.scrollHeight;
+                }
+
+                output.textContent += decoder.decode();
+
+                status.textContent =
+                    "Run ended. Check the final result and test evidence below.";
+            } catch (error) {
+                status.textContent = "Error: " + error.message;
+            } finally {
+                button.disabled = false;
+                loadFiles().catch(console.error);
+            }
+        });
+
+        loadFiles().catch(console.error);
+    </script>
+</body>
+</html>
