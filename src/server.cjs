@@ -17,7 +17,8 @@ app.post("/run", (req, res) => {
     // Only accept browser requests from our local page.
     const origin = req.get("origin");
     if (origin && ![
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
     ].includes(origin)) {
         return res.status(403).send("Invalid origin.");
     }
@@ -34,8 +35,11 @@ app.post("/run", (req, res) => {
         return res.status(400).send("Choose a system and enter a task.");
     }
 
-    if (!process.env.GROQ_API_KEY) {
-        return res.status(400).send("Set GROQ_API_KEY before starting Node.");
+    // if (!process.env.GROQ_API_KEY) {
+    //     return res.status(400).send("Set GROQ_API_KEY before starting Node.");
+    // }
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(400).send("Set GEMINI_API_KEY before starting Node.");
     }
 
     running = true;
