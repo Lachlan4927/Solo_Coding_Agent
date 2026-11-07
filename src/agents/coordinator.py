@@ -11,10 +11,13 @@ class Coordinator:
 
     def __init__(self, coder, tester):
         self.coder = coder
-        self.tester = tester
+        self.tester = tester 
         self.test_runs = {}
         self.coder_files = set()
         original_write_file = self.coder.tools["write_file"]
+
+
+
 
         @tool
         def write_file(path: str, content: str) -> str:
@@ -35,6 +38,8 @@ class Coordinator:
         self.coder.tools["write_file"] = write_file
 
 
+
+
         @tool
         def execute_file(path: str) -> str:
             """
@@ -53,6 +58,11 @@ class Coordinator:
 
         self.tester.tools["execute_file"] = execute_file
 
+
+
+
+
+
     def run_worker(self, worker, task):
         if worker.name == "coder":
             self.coder_files.clear()
@@ -62,7 +72,6 @@ class Coordinator:
 
         except AgentGenerationError as error:
             message = str(error)
-
                
             if (
                 worker.name == "tester"

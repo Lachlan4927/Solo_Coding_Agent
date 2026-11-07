@@ -4,185 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Coding Assistant</title>
-
     <style>
-        body {
-            font-family: system-ui, sans-serif;
-            max-width: 950px;
-            margin: 35px auto;
-            padding: 0 20px;
-            background: #f5f6f8;
-            color: #202530;
-        }
-
-        textarea, input, select, button {
-            box-sizing: border-box;
-            font: inherit;
-            padding: 10px;
-            margin-bottom: 12px;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 130px;
-        }
-
-        button { cursor: pointer; }
-
-        pre {
-            background: #18202c;
-            color: #e6edf5;
-            padding: 18px;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            max-height: 500px;
-            overflow-y: auto;
-            border-radius: 8px;
-        }
-
-        li { margin: 10px 0; }
-
-        .clear { clear: both; }
-
+        body { font-family: system-ui, sans-serif; max-width: 950px; margin: 35px auto; padding: 0 20px; background: #f5f6f8; color: #202530; }
+        input, select, textarea, button { box-sizing: border-box; font: inherit; padding: 10px; margin-bottom: 12px; }
+        textarea { display: block; width: 100%; min-height: 130px; }
+        button, summary { cursor: pointer; }
+        pre { background: #18202c; color: #e6edf5; padding: 18px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 500px; overflow-y: auto; }
+        li { margin: 10px 0; } 
     </style>
-</head>
-
-<body>
+ </head>
+ <body>
     <h1>Coding Assistant</h1>
-
     <form id="taskForm">
         <label for="mode">System:</label>
         <select id="mode">
             <option value="multi">Multi-agent</option>
             <option value="single">Single agent</option>
         </select>
-
-        <input type="text" id="taskId" placeholder="Task ID, e.g. T01" >
-
-        <textarea id="task" required placeholder="Describe your coding task"></textarea>
-
+        <input type="text" id="taskId" aria-label="Task ID" placeholder="Task ID, e.g. T01">
+        <textarea id="task" aria-label="Coding task" required placeholder="Describe your coding task"></textarea>
         <button type="submit" id="runButton">Run task</button>
     </form>
 
-    <pre id="savedLog">No saved run yet.</pre>
-    <div class="clear"></div>
-
     <p id="status">Ready.</p>
-
-    <h2>Run output</h2>
-    <pre id="output">Output will appear here.</pre>
+    <pre id="savedLog">No saved run yet.</pre>
+    <details id="runDetails">
+        <summary>Run details</summary>
+        <pre id="output">Output will appear here.</pre>
+    </details>
 
     <h2>Workspace files</h2>
-    <p>Includes files from previous runs. Click a name to inspect it.</p>
+    <p>Includes files from previous runs.</p>
     <ul id="files"></ul>
 
     <script>
-        const form = document.querySelector("#taskForm");
-        const button = document.querySelector("#runButton");
-        const output = document.querySelector("#output");
-        const status = document.querySelector("#status");
+        const $ = id => document.getElementById(id);
+        let busy = false;
 
         async function loadLatestLog() {
             try {
                 const response = await fetch("/latest-log", { cache: "no-store" });
                 if (!response.ok) return;
-
-                const log = await response.json();
+                const log = await response.json(); 
+                if (busy) return;
                 const text = log.output || "";
-                const result = text.split("final result:").pop().trim().split("\n")[0];
-                const counts = [...text.matchAll(/Ran (\d+) tests?/g)];
-                const count = counts.length ? counts[counts.length - 1][1] : "?";
-                const recovered =
-                    text.includes("Coder response failed.") ||
-                    text.includes("Recorded unittest executions passed.");
 
-                document.querySelector("#savedLog").textContent =
-                    `Task: ${log.task_id}\n` +
-                    `System: ${log.mode}\n` +
-                    `Duration: ${log.seconds} seconds\n` +
-                    `Tests: ${count} run\n` +
-                    `Final result: ${text.includes("final result:") ? result : "Unconfirmed"}\n` +
-                    `Recovery: ${recovered ? "Used after malformed model responses" : "Not recorded"}`;
+                // Check the latest execution, rather than an earlier passing test.
+                const runs = [...text.matchAll(
+                    /^Observations: (execution worked|execution failed|True|False)\r?\n([\s\S]*?)(?=^\[Step |(?![\s\S]))/gm
+                )];
+                const last = runs.at(-1);
+                const evidence = last?.[2] || "";
+                const count = Number(evidence.match(/\bRan (\d+) tests?\b/)?.[1] || 0);
+                const changed = last && /^Observations: (?:saved (?:test )?file:|deleted file:)/m.test(
+                    text.slice(last.index + last[0].length)
+                );
+                const passed = ["execution worked", "True"].includes(last?.[1]) &&
+                    count > 0 && /^OK\s*$/m.test(evidence) &&
+                    !/^FAILED\b/m.test(evidence) && !changed;
+
+                const final = text.includes("final result:")
+                    ? text.split("final result:").pop().trim()
+                    : log.errors || "No final result recorded.";
+                const reports = [...text.matchAll(/Coder report:([\s\S]*?)(?=└|╰|━━━━━━━━|$)/g)];
+                const coder = (reports.at(-1)?.[1] || "")
+                    .replace(/^[ \t]*│[ \t]?|[ \t]*│[ \t]*$/gm, "").trim();
+                const files = [...new Set(
+                    [...text.matchAll(/^Observations: saved (?:test )?file: ([^\r\n]+)/gm)]
+                        .map(m => m[1].trim())
+                )];
+
+                let report = passed ? "Recorded test result: PASS" : "Agent result:\n" + final;
+                if (passed && final.startsWith("STOPPED")) report += "\nAgent completion unconfirmed.";
+                if (!passed && log.mode === "multi" && coder) report += "\n\nCoder report:\n" + coder;
+
+                $("savedLog").textContent = [
+                    "Task: " + log.task_id,
+                    "System: " + log.mode,
+                    "Duration: " + log.seconds + " seconds",
+                    "Tests: " + count + " run",
+                    "Files saved: " + (files.join(", ") || "None recorded"),
+                    "", report
+                ].join("\n");
+                $("output").textContent = text + (log.errors ? "\n" + log.errors : "");
+                $("runDetails").open = !passed;
             } catch {
-                document.querySelector("#savedLog").textContent = "Log unavailable.";
+                $("savedLog").textContent = "Log unavailable.";
             }
         }
-
-loadLatestLog();
 
         async function loadFiles() {
-            const response = await fetch("/files");
-            const files = await response.json();
-            const list = document.querySelector("#files");
+            try {
+                const response = await fetch("/files", { cache: "no-store" });
+                if (!response.ok) throw new Error();
+                const files = await response.json();
+                $("files").replaceChildren();
 
-            list.replaceChildren();
-
-            for (const name of files) {
-                const item = document.createElement("li");
-
-                const view = document.createElement("a");
-                view.textContent = name;
-                view.href = "/file?name=" + encodeURIComponent(name);
-                view.target = "_blank";
-                view.rel = "noopener";
-
-                const download = document.createElement("a");
-                download.textContent = "Download";
-                download.href = view.href;
-                download.download = name.split("/").pop();
-
-                item.append(view, " — ", download);
-                list.append(item);
+                for (const name of files) {
+                    const item = document.createElement("li");
+                    const view = document.createElement("a");
+                    view.textContent = name;
+                    view.href = "/file?name=" + encodeURIComponent(name);
+                    view.target = "_blank";
+                    view.rel = "noopener";
+                    const download = view.cloneNode(true);
+                    download.textContent = "Download";
+                    download.download = name.split("/").pop();
+                    download.removeAttribute("target");
+                    item.append(view, " — ", download);
+                    $("files").append(item);
+                }
+            } catch {
+                $("files").textContent = "Files unavailable.";
             }
         }
 
-        form.addEventListener("submit", async event => {
+        $("taskForm").onsubmit = async event => {
             event.preventDefault();
-
-            button.disabled = true;
-            output.textContent = "";
-            status.textContent =
-                "Running. Detailed output appears when the Python run finishes.";
+            busy = true;
+            $("runButton").disabled = true;
+            $("runButton").textContent = "Running...";
+            $("savedLog").textContent = "Waiting for this run's report...";
+            $("output").textContent = "";
+            $("runDetails").open = true;
+            $("status").textContent = "Running. Waiting for agent output...";
 
             try {
                 const response = await fetch("/run", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        mode: document.querySelector("#mode").value,
-                        taskId: document.querySelector("#taskId").value,
-                        task: document.querySelector("#task").value
+                        mode: $("mode").value,
+                        taskId: $("taskId").value.trim() || "GUI",
+                        task: $("task").value
                     })
                 });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
+                if (!response.ok) throw new Error(await response.text());
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-
-                while (true) {
+                while (true) { 
                     const { done, value } = await reader.read();
                     if (done) break;
-
-                    output.textContent += decoder.decode(value, { stream: true });
-                    output.scrollTop = output.scrollHeight;
+                    $("output").textContent += decoder.decode(value, { stream: true });
+                    $("output").scrollTop = $("output").scrollHeight;
                 }
+                $("output").textContent += decoder.decode();
+                busy = false;
 
-                output.textContent += decoder.decode();
-
-                status.textContent =
-                    "Run ended. Check the final result and test evidence below.";
+                if ($("output").textContent.includes("Saved to runtime/logs/runs.jsonl")) {
+                    await loadLatestLog();
+                    $("status").textContent = "Run finished.";
+                } else {
+                    $("savedLog").textContent = "Run ended without a saved report. Check run details.";
+                    $("status").textContent = "Run ended without a saved report.";
+                }
             } catch (error) {
-                status.textContent = "Error: " + error.message;
+                $("status").textContent = error.message;
+                $("savedLog").textContent = "No new report loaded.";
             } finally {
-                button.disabled = false;
-                loadFiles().catch(console.error);
+                busy = false;
+                $("runButton").disabled = false;
+                $("runButton").textContent = "Run task";
+                loadFiles();
             }
-        });
+        };
 
-        loadFiles().catch(console.error);
+        loadLatestLog();
+        loadFiles();
     </script>
 </body>
 </html>

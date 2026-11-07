@@ -4,12 +4,5 @@ Create subtraction.py with subtract(a, b) returning a - b. Support positive, neg
 Create multiplication.py with multiply(a, b) returning a * b. Support positive, negative and zero integers. Use only Python's standard library. Write and run unittest tests.
 Create even_check.py with is_even(number) returning True for even integers and False otherwise. Support zero and negative integers. Use only Python's standard library. Write and run unittest tests.
 Create character_count.py with count_characters(text) returning the number of characters, including spaces. An empty string returns 0. Use only Python's standard library. Write and run unittest tests.
-Create reverse_text.py with reverse_text(text) returning the string backwards. An empty string returns an empty string. Use only Python's standard library. Write and run unittest tests.
-Create number_total.py with total(numbers) returning the sum of a list of numbers. An empty list returns 0. Use only Python's standard library. Write and run unittest tests.
 
 
-
-harder 
-
-
-Create a Python program in solution.py that analyses student grades, accepts student names and numerical scores, calculates the average, highest and lowest scores, assigns letter grades, identifies students who passed, rejects invalid inputs and scores outside 0–100, displays a formatted summary, and uses only the Python standard library.
