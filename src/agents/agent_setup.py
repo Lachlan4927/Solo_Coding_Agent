@@ -16,17 +16,17 @@ from agents.coordinator import Coordinator
 from agents.agent_prompts import CODER, TESTER, SINGLE
 from tools.agent_toolsets import CODER_TOOLS, TESTER_TOOLS, SINGLE_TOOLS
 
-# # good recent build here------------------------
+# good recent build here------------------------
 # def build_model():
-#     return OpenAIModel(
-#         model_id="openai/gpt-oss-120b",
-#         api_base="https://api.groq.com/openai/v1",
-#         api_key=os.environ["GROQ_API_KEY"],
-#         reasoning_effort="low",
-#         max_tokens=8192,
-#         temperature=0.1,
-#         # stop=None,
-#     )
+    # return OpenAIModel(
+    #     model_id="openai/gpt-oss-120b",
+    #     api_base="https://api.groq.com/openai/v1",
+    #     api_key=os.environ["GROQ_API_KEY"],
+    #     reasoning_effort="low",
+    #     max_tokens=1024,
+    #     temperature=0.1,
+    #     # stop=None,
+    # )
 
 
 
@@ -39,10 +39,10 @@ def build_model():
             "v1beta/openai/"
         ),
         api_key=os.environ["GEMINI_API_KEY"],
-        max_tokens=8192,
-        temperature=0.1,
-        reasoning_effort="low",
-    )
+        max_tokens=2048,
+        temperature=0.1, 
+        reasoning_effort="low", 
+    )  
 
 def build_single_agent():
     

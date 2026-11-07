@@ -57,6 +57,5 @@ foreach ($task in Get-Content "src\evaluation\tasks.txt") {
     $number++
     $taskId = "E{0:D2}" -f $number
 
-    # Invoke-Task "single" $taskId $task
-    Invoke-Task "multi" $taskId $task
-}
+    Invoke-Task "single" $taskId $task
+    Invoke-Task "multi" $taskId $}

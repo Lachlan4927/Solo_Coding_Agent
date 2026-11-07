@@ -23,12 +23,12 @@ __pycache__/
 htmlcov/
 
 # Generated agent files and runtime output
-/runtime/workspace/
-/runtime/logs/
-/runtime/tmp/
+# /runtime/workspace/
+# /runtime/logs/
+# /runtime/tmp/
 
 # Logs
-*.log
+# *.log
 
 # Build output
 build/
