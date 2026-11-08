@@ -1,4 +1,4 @@
-import re  # regex to parse agent reports and recover files on api error not tool call common with grok
+import re
 
 from smolagents import tool
 from smolagents.utils import AgentGenerationError
