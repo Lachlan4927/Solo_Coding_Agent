@@ -13,14 +13,16 @@ The intended tasks are small, noninteractive Python programs using the standard 
 
 The coordinator is ordinary Python control logic, not a third language-model agent. Both modes use the configuration in `src/agents/agent_setup.py`:
 
-| Setting | Current value |
-| --- | --- |
-| Provider endpoint | `https://api.groq.com/openai/v1` |
-| Model ID | `openai/gpt-oss-120b` |
-| API-key variable | `GROQ_API_KEY` |
-| Temperature | `0.1` |
-| Reasoning effort | `low` |
-| Maximum response tokens | `8192` |
+| Setting | Gemini configuration | Groq configuration |
+| --- | --- | --- |
+| Provider endpoint | `https://generativelanguage.googleapis.com/v1beta/openai/` | `https://api.groq.com/openai/v1` |
+| Model ID | `gemini-3.5-flash-lite` | `openai/gpt-oss-120b` |
+| API-key variable | `GEMINI_API_KEY` | `GROQ_API_KEY` |
+| Temperature | `0.1` | `0.1` |
+| Reasoning effort | `low` | `low` |
+| Maximum response tokens | `2048` | `2048` |
+
+The supplied configuration selects Gemini. To use Groq, update the model ID, provider endpoint and API-key lookup in `build_model()` to the Groq values above. Set the environment variable matching the selected provider. Either provider can be used; only the selected provider's key is required. Setting a different key alone does not change an explicitly configured provider.
 
 The commented model configurations are earlier experiments. Ollama is not required by the active configuration.
 
@@ -31,9 +33,9 @@ The supplied browser launcher and evaluation script target **Windows with PowerS
 - Python installed with the Windows `py` launcher. The setup example uses Python 3.12, matching the generated-code Docker image.
 - Node.js and npm. The committed npm dependency lockfile requires Node.js 18 or newer.
 - Docker Desktop running with Linux containers and the `docker` command available in PowerShell.
-- A Groq API key with access to the configured model, and internet access for model requests.
+- A Gemini or Groq API key matching the configured provider, and internet access for model requests.
 
-Python dependencies are listed in `requirements.txt`; their versions are not pinned. Model access and API limits depend on the provider. These instructions describe the source configuration; a clean installation and live end-to-end run have not been verified as part of this documentation update.
+Python dependencies are listed in `requirements.txt`; their versions are not pinned. Model access and API limits depend on the provider.
 
 ## Setup
 
@@ -43,7 +45,7 @@ Create the virtual environment and install dependencies:
 
 ```powershell
 py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt openai
 npm.cmd ci
 ```
 
@@ -56,10 +58,23 @@ docker info
 docker pull python:3.12-slim
 ```
 
-Set the API key in the same PowerShell session used to start the application. Replace the placeholder with your key:
+Set the API key in the same PowerShell session used to start the application. Replace the placeholder with your key.
+
+For the default Gemini configuration:
+
+```powershell
+$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+```
+
+For a Groq-configured build:
 
 ```powershell
 $env:GROQ_API_KEY = "YOUR_GROQ_API_KEY"
+```
+
+Set the console options:
+
+```powershell
 $env:PYTHONIOENCODING = "utf-8"
 $env:NO_COLOR = "1"
 ```
@@ -72,9 +87,7 @@ These variables last for the current PowerShell session. The application does no
 node .\src\server.cjs
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-**Use `localhost`, even though the server prints a `127.0.0.1` address.** The current origin check rejects task submissions from `http://127.0.0.1:3000`.
+Open [http://localhost:3000](http://localhost:3000) or [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 1. Select **Single agent** or **Multi-agent**.
 2. Enter a task ID, such as `T01`, and a coding task.
@@ -147,7 +160,7 @@ For certain `400 tool_use_failed` errors, the coordinator can pass already-saved
 
 ## Evaluation
 
-`src/evaluation/tasks.txt` contains eight standard-library Python tasks covering greeting, addition, subtraction, multiplication, parity, character counting, text reversal, and list totals.
+`src/evaluation/tasks.txt` contains six standard-library Python tasks covering greeting, addition, subtraction, multiplication, parity, and character counting.
 
 After setup and API-key configuration, run the supplied batch from the project root:
 
@@ -155,7 +168,7 @@ After setup and API-key configuration, run the supplied batch from the project r
 .\src\evaluate.ps1
 ```
 
-The script runs each task in single-agent mode followed by multi-agent mode: 16 runs in total. It saves transcripts such as `evaluation-results/E01-single.txt` and `evaluation-results/E01-multi.txt`; JSONL records are appended to `runtime/logs/runs.jsonl`. Re-running the batch overwrites transcripts with the same names. Each run makes model requests and is subject to provider limits.
+The script runs each task in single-agent mode followed by multi-agent mode: 12 runs in total. It saves transcripts such as `evaluation-results/E01-single.txt` and `evaluation-results/E01-multi.txt`; JSONL records are appended to `runtime/logs/runs.jsonl`. Re-running the batch overwrites transcripts with the same names. Each run makes model requests and is subject to provider limits.
 
 **The batch does not reset the workspace or calculate a score.** Later runs can see earlier implementations and tests, so its output should not be presented as an isolated comparison.
 
@@ -167,7 +180,7 @@ For an independent manual comparison:
 4. Preserve the implementation, tests, full output, final result, test count, elapsed time, and any API or execution failure.
 5. Repeat for the other mode with a fresh workspace. Review test quality against the original requirements as well as the reported outcome.
 
-The supplied `evaluation-results/E01-single.txt` is a partial transcript ending at Step 1. It is not evidence of a completed evaluation or passing task. No aggregate comparison results are included.
+The supplied transcripts include successful, stopped and recovered runs. Historical Groq results and later Gemini results should be identified separately; results from different models do not provide an architecture-only comparison. No aggregate comparison results are included.
 
 ## Project layout
 
@@ -195,8 +208,8 @@ package-lock.json             Locked npm dependency tree
 
 | Symptom | Check or action |
 | --- | --- |
-| `Invalid origin.` | Open `http://localhost:3000` exactly. |
-| Missing key or `KeyError: GROQ_API_KEY` | Set the variable before starting Node or Python. Restart Node if the key was set afterward. |
+| `Invalid origin.` | Open `http://localhost:3000` or `http://127.0.0.1:3000`. |
+| Missing key or API-key `KeyError` | Set the environment variable required by `build_model()` before starting Node or Python. Restart Node if the key was set afterward. |
 | `Could not start Python` | Create `.venv` in the project root and install its dependencies. |
 | Docker unavailable or execution times out | Start Docker Desktop with Linux containers, check `docker info`, and pre-pull `python:3.12-slim`. |
 | Model/API or tool-call error | Inspect the full output and provider response; saved files alone do not establish success. |
